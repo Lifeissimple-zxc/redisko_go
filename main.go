@@ -2,10 +2,19 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 )
+
+type Person struct {
+	ID   string
+	Name string `json:name`
+	Age  int    `json:name`
+	Job  string `json:job"`
+}
 
 func main() {
 	fmt.Println("ciao from redis tutor")
@@ -25,12 +34,28 @@ func main() {
 	}
 	fmt.Println(ping) // PONG
 
-	lookupKey := "myKey"
+	lookupKey := uuid.NewString()
+	fmt.Printf("lookup key: %s\n", lookupKey)
+	data, err := json.Marshal(Person{
+		ID:   lookupKey,
+		Age:  21,
+		Name: "Savage",
+		Job:  "Busy",
+	})
+	if err != nil {
+		fmt.Printf("error converting to JSON: %s\n", err)
+		return
+	}
 
-	if err = rd.Set(context.Background(), lookupKey, "myValue", 0).Err(); err != nil {
+	if err = rd.Set(context.Background(), lookupKey, data, 0).Err(); err != nil {
 		fmt.Printf("error setting value: %s\n", err)
 		return
 	}
-	// TODO: https://www.youtube.com/watch?v=1C3Ym_JjkMw
 
+	val, err := rd.Get(context.Background(), lookupKey).Result()
+	if err != nil {
+		fmt.Printf("error fetching value %s\n", err)
+		return
+	}
+	fmt.Println(val)
 }
